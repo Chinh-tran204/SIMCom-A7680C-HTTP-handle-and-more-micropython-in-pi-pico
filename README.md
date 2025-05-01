@@ -11,7 +11,9 @@ when you want to use the function just do
 - SIMCom.handShake()
 
 #Note: Read the comments in the code to change the code to make it fit for your use case
+
 #The code already have the trials handle and time out handle, if you want a better code, try to scan for 'OK' str every time sending command to the SIMCom.
 
 SIMCom.MSG() - for message sending to some number PHONE_NUM
+
 SIMCom.handShake() - Check if the SIMCom is ready for MSG or HTTP, also remove the echo message for better check when needed
