@@ -1,6 +1,6 @@
 # SIMCom A7680C HTTP handle for python and C(STM32 HAL) updated.
 Http method and functions for SIMCom communicate.
-1. Python + RP4020.
+# 1. Python + RP4020.
 To set up the SIMCom connect 5V and GND to the SIMCom, connect the SIMCom tx rx to the pi pico rx tx
 begin the SIMCom connection by 
 - import SIMCom
@@ -19,11 +19,11 @@ SIMCom.MSG() - for message sending to some number PHONE_NUM
 
 SIMCom.handShake() - Check if the SIMCom is ready for MSG or HTTP, also remove the echo message for better check when needed
 
-2. C LIB (STM32 HAL) + STM32
-Connection keeping the same as above with the 5V GND and TX RX pin.
-# In this we'll use UART2 as the communicate port and put it in EXT mode
-# Init SIM data scanning and interupt handle for the UART
-# All of the buffer and flag is init in the lib, change if you want, base on your need
+# 2. C LIB (STM32 HAL) + STM32
+- Connection keeping the same as above with the 5V GND and TX RX pin.
+- In this we'll use UART2 as the communicate port and put it in EXT mode
+- Init SIM data scanning and interupt handle for the UART
+- All of the buffer and flag is init in the lib, change if you want, base on your need
 
 //Init UART receive msg
 HAL_UARTEx_ReceiveToIdle_IT(&huart2, SIM_buffer, UART_RX_BUFFER_SIZE);
