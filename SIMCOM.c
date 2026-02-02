@@ -43,13 +43,13 @@ const char *messeage[] = {
 	"AT+HTTPTERM\r",
 	"AT+CSSLCFG=\"enableSNI\",0,1\r",
 	"AT+HTTPINIT\r",
-	"AT+HTTPPARA=\"URL\",\"https://your-api.com/ports/\"\r",
+	"AT+HTTPPARA=\"URL\",\"https://api.admin.bi-oil.app/postcontainer/\"\r",
 	"AT+HTTPPARA=\"CONTENT\",\"application/json\"\r",
 	"AT+HTTPACTION=1\r",
 	"AT+HTTPREAD=0,300\r",
 	"AT+HTTPTERM\r",
 	//Get
-	"AT+HTTPPARA=\"URL\",\"https://your-api/get/\"\r",
+	"AT+HTTPPARA=\"URL\",\"https://api.admin.bi-oil.app/vinschool-machine/get-auth\"\r",
 	"AT+HTTPACTION=0\r",
 	//Sleep mode
 	"AT+CSCLK=2\r",
@@ -245,172 +245,175 @@ void SIM_CheckResponse(uint8_t action){
 
 /* SIM Post action */
 SIMCOM_Error SIMCom_Post(const char* data, const char* url, uint32_t timeOut){
-    /* Timeout handle */
-    if(timeOutHandle(timeOut)){Result = ERR_UART;}
-    /* Buffer time for safe operation */
-    delay_ms(50);
-    switch (STATE) {
-        case AT:
-            Transmit(messeage[0]); //AT
+    char data_len_buffer[100];
+    while( result == EMPTY ) {
+        /* Timeout handle */
+        if(timeOutHandle(timeOut)){
+            Result = ERR_UART;
             break;
-        case CSSLCFG:
-            Transmit(messeage[2]); //AT+CSSLCFG
-            break;
-        case HTTPINIT:
-            Transmit(messeage[3]); //AT+INIT
-            break;
-        case HTTPPARA_URL:
-        	snprintf(char_url, sizeof(char_url), "AT+HTTPPARA=\"URL\",\"%s\"\r", url);
-            Transmit(char_url); //AT+HTTPPARA URL
-            break;
-        case HTTPPARA_CONTENT:
-            Transmit(messeage[5]); //AT+HTTPPARA CONTENT
-            break;
-        case HTTPPARA_AUTH:
-            break;
-        case HTTPDATA_LEN:
-			char data_len_buffer[100];
-			snprintf(data_len_buffer, sizeof(data_len_buffer), "AT+HTTPDATA=%d,10000\r", strlen(data));
-			Transmit(data_len_buffer); //AT+HTTPDATA LEN
-            break;
-        case TRANSMIT_DATA:
-            Transmit(data);         //Transmit DATA
-            break;
-        case HTTPACTION:
-            Transmit(messeage[6]);   //AT+HTTPACTION - POST
-            break;
-        case HTTPREAD:
-            Transmit(messeage[7]);   //AT+HTTPREAD
-            break;
-        case HTTPTERM_1:
-            Transmit(messeage[8]);   //AT+HTTPTERM
-            break;
-        case HTTPTERM_2:
-            Transmit(messeage[8]);   //AT+HTTPTERM
-            break;
-        case AWAIT:
-            SIM_CheckResponse(1);
-            break;
-        default:
-            break;
+        }
+        /* Buffer time for safe operation */
+        delay_ms(50);
+        switch (STATE) {
+            case AT:
+                Transmit(messeage[0]); //AT
+                break;
+            case CSSLCFG:
+                Transmit(messeage[2]); //AT+CSSLCFG
+                break;
+            case HTTPINIT:
+                Transmit(messeage[3]); //AT+INIT
+                break;
+            case HTTPPARA_URL:
+                snprintf(char_url, sizeof(char_url), "AT+HTTPPARA=\"URL\",\"%s\"\r", url);
+                Transmit(char_url); //AT+HTTPPARA URL
+                break;
+            case HTTPPARA_CONTENT:
+                Transmit(messeage[5]); //AT+HTTPPARA CONTENT
+                break;
+            case HTTPPARA_AUTH:
+                break;
+            case HTTPDATA_LEN:
+                snprintf(data_len_buffer, sizeof(data_len_buffer), "AT+HTTPDATA=%d,10000\r", strlen(data));
+                Transmit(data_len_buffer); //AT+HTTPDATA LEN
+                break;
+            case TRANSMIT_DATA:
+                Transmit(data);         //Transmit DATA
+                break;
+            case HTTPACTION:
+                Transmit(messeage[6]);   //AT+HTTPACTION - POST
+                break;
+            case HTTPREAD:
+                Transmit(messeage[7]);   //AT+HTTPREAD
+                break;
+            case HTTPTERM_1:
+                Transmit(messeage[8]);   //AT+HTTPTERM
+                break;
+            case HTTPTERM_2:
+                Transmit(messeage[8]);   //AT+HTTPTERM
+                break;
+            case AWAIT:
+                SIM_CheckResponse(1);
+                break;
+            default:
+                break;
+        }
     }
-    if(Result == EMPTY){
-        return SIMCom_Post(data, url, timeOut);
-    } else {
-    	delay_ms(1000);
-        return Result;
-    }
+    // Return the result
+    delay_ms(1000);
+    return Result;
 }
 
 SIMCOM_Error SIMCom_Get(const char *id_machine, uint32_t timeOut){
-    /* Timeout handle */
-    if(timeOutHandle(timeOut)){Result = ERR_UART;}
-    /* Buffer time for safe operation */
-    delay_ms(50);
-    switch (STATE) {
-        case AT:
-            Transmit(messeage[0]); //AT
+    while (result == EMPTY ) {
+        /* Timeout handle */
+        if(timeOutHandle(timeOut)){
+            Result = ERR_UART;
             break;
-        case CSSLCFG:
-            Transmit(messeage[2]); //AT+CSSLCFG
-            break;
-        case HTTPINIT:
-            Transmit(messeage[3]); //AT+INIT
-            break;
-        case HTTPPARA_URL:
-            Transmit(messeage[9]); //AT+HTTPPARA URL
-            break;
-        case HTTPPARA_AUTH:
-            snprintf(author, sizeof(author), "AT+HTTPPARA=\"USERDATA\",\"Authorization: Basic %s\"\r", id_machine);
-            Transmit(author);       //AT+HTTPPARA AUTH
-            break;
-        case HTTPACTION:
-            Transmit(messeage[10]);   //AT+HTTPACTION - GET
-            break;
-        case HTTPREAD:
-            Transmit(messeage[7]);   //AT+HTTPREAD
-            break;
-        case HTTPTERM_1:
-            Transmit(messeage[1]);   //AT+HTTPTERM
-            break;
-        case HTTPTERM_2:
-            Transmit(messeage[1]);   //AT+HTTPTERM
-            break;
-        case AWAIT:
-            SIM_CheckResponse(0);
-            break;
-        default:
-        	STATE = HTTPTERM_1;
-        	break;
+        }
+        /* Buffer time for safe operation */
+        delay_ms(50);
+        switch (STATE) {
+            case AT:
+                Transmit(messeage[0]); //AT
+                break;
+            case CSSLCFG:
+                Transmit(messeage[2]); //AT+CSSLCFG
+                break;
+            case HTTPINIT:
+                Transmit(messeage[3]); //AT+INIT
+                break;
+            case HTTPPARA_URL:
+                Transmit(messeage[9]); //AT+HTTPPARA URL
+                break;
+            case HTTPPARA_AUTH:
+                snprintf(author, sizeof(author), "AT+HTTPPARA=\"USERDATA\",\"Authorization: Basic %s\"\r", id_machine);
+                Transmit(author);       //AT+HTTPPARA AUTH
+                break;
+            case HTTPACTION:
+                Transmit(messeage[10]);   //AT+HTTPACTION - GET
+                break;
+            case HTTPREAD:
+                Transmit(messeage[7]);   //AT+HTTPREAD
+                break;
+            case HTTPTERM_1:
+                Transmit(messeage[1]);   //AT+HTTPTERM
+                break;
+            case HTTPTERM_2:
+                Transmit(messeage[1]);   //AT+HTTPTERM
+                break;
+            case AWAIT:
+                SIM_CheckResponse(0);
+                break;
+            default:
+                STATE = HTTPTERM_1;
+                break;
+        }
     }
-    if(Result == EMPTY){
-        return SIMCom_Get(id_machine, timeOut);
-    } else {
-    	delay_ms(1000);
-        return Result; 
-    }
+    // Return the result
+    delay_ms(1000);
+    return Result; 
 }
 
 SIMCOM_Error SIM_Sleep(uint32_t timeOut){
-    /* Timeout handle */
-    if(timeOutHandle(timeOut)){Result = ERR_UART;}
-    /* Buffer time for safe operation */
-    delay_ms(50);
-    switch (STATE) {
-        case AT:
-            Transmit(messeage[0]); //AT
-            break;
-        case SLEEP:
-            Transmit(messeage[11]); //AT+CSCLK=2
-            break;
-        case HTTPTERM_1:
-        	STATE = AT;
-        	break;
-        case AWAIT:
-            SIM_CheckResponse(2);
-            break;
-        default:
-            break;
+    while(result == EMPTY ) {
+        /* Timeout handle */
+        if(timeOutHandle(timeOut)){Result = ERR_UART;}
+        /* Buffer time for safe operation */
+        delay_ms(50);
+        switch (STATE) {
+            case AT:
+                Transmit(messeage[0]); //AT
+                break;
+            case SLEEP:
+                Transmit(messeage[11]); //AT+CSCLK=2
+                break;
+            case HTTPTERM_1:
+                STATE = AT;
+                break;
+            case AWAIT:
+                SIM_CheckResponse(2);
+                break;
+            default:
+                break;
+        }
     }
-    if(Result == EMPTY){
-        return SIM_Sleep(timeOut);
-    } else {
-    	delay_ms(1000);
-        return Result;
-    }
+    //return the result
+    delay_ms(1000);
+    return Result;
+    
 }
 
 
 SIMCOM_Error SIM_Wakeup(uint32_t timeOut){
-    /* Timeout handle */
-    if(timeOutHandle(timeOut)){Result = ERR_UART;}
-    /* Buffer time for safe operation */
-    delay_ms(50);
-    switch (STATE) {
-        case AT:
-        	SIM_DataValid = false;
-			HAL_UART_Transmit(&huart2, (uint8_t*)"AT\r", 3, 50);// Send data UART
-        	// 	LOG("[SIM_CMD]",cmd);
-			STATE = AWAIT;
-            PRE_STATE = AT;
-            break;
-        case HTTPTERM_1:
-        	HAL_UART_Transmit(&huart2, (uint8_t*) "AT\r", 3, 50);
-            delay_ms(100);
-        	STATE = AT;
-        	break;
-        case AWAIT:
-            SIM_CheckResponse(3);
-            break;
-        default:
-        	break;
+    while(result == EMPTY ) {
+        /* Timeout handle */
+        if(timeOutHandle(timeOut)){Result = ERR_UART;}
+        /* Buffer time for safe operation */
+        delay_ms(50);
+        switch (STATE) {
+            case AT:
+                SIM_DataValid = false;
+                HAL_UART_Transmit(&huart2, (uint8_t*)"AT\r", 3, 50);// Send data UART
+                // 	LOG("[SIM_CMD]",cmd);
+                STATE = AWAIT;
+                PRE_STATE = AT;
+                break;
+            case HTTPTERM_1:
+                HAL_UART_Transmit(&huart2, (uint8_t*) "AT\r", 3, 50);
+                delay_ms(100);
+                STATE = AT;
+                break;
+            case AWAIT:
+                SIM_CheckResponse(3);
+                break;
+            default:
+                break;
+        }
     }
-    if(Result == EMPTY){
-        return SIM_Wakeup(timeOut);
-    } else {
-    	delay_ms(1000);
-        return Result;
-    }
+    //return the result
+    delay_ms(1000);
+    return Result;
 }
 
 
