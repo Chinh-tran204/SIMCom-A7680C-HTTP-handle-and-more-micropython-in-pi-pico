@@ -246,7 +246,7 @@ void SIM_CheckResponse(uint8_t action){
 /* SIM Post action */
 SIMCOM_Error SIMCom_Post(const char* data, const char* url, uint32_t timeOut){
     char data_len_buffer[100];
-    while( result == EMPTY ) {
+    while(Result == EMPTY ) {
         /* Timeout handle */
         if(timeOutHandle(timeOut)){
             Result = ERR_UART;
@@ -305,7 +305,7 @@ SIMCOM_Error SIMCom_Post(const char* data, const char* url, uint32_t timeOut){
 }
 
 SIMCOM_Error SIMCom_Get(const char *id_machine, uint32_t timeOut){
-    while (result == EMPTY ) {
+    while (Result == EMPTY ) {
         /* Timeout handle */
         if(timeOutHandle(timeOut)){
             Result = ERR_UART;
@@ -356,7 +356,7 @@ SIMCOM_Error SIMCom_Get(const char *id_machine, uint32_t timeOut){
 }
 
 SIMCOM_Error SIM_Sleep(uint32_t timeOut){
-    while(result == EMPTY ) {
+    while(Result == EMPTY ) {
         /* Timeout handle */
         if(timeOutHandle(timeOut)){Result = ERR_UART;}
         /* Buffer time for safe operation */
@@ -386,7 +386,7 @@ SIMCOM_Error SIM_Sleep(uint32_t timeOut){
 
 
 SIMCOM_Error SIM_Wakeup(uint32_t timeOut){
-    while(result == EMPTY ) {
+    while(Result == EMPTY ) {
         /* Timeout handle */
         if(timeOutHandle(timeOut)){Result = ERR_UART;}
         /* Buffer time for safe operation */
