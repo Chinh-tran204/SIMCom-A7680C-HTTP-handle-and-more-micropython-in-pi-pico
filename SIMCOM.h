@@ -11,6 +11,7 @@
 extern volatile bool SIM_DataValid;
 extern uint8_t SIM_data[];
 extern uint8_t SIM_buffer[];
+extern UART_HandleTypeDef *p_sim_uart;
 
 typedef enum {
     DONE,
@@ -32,8 +33,9 @@ typedef enum {
 
 uint8_t SIMCom_Init(void);//Create interrupt
 float SIMCom_HandShake(void); //handShake
-SIMCOM_Error SIMCom_Post(const char* data, const char* id_machine, uint32_t timeOut); //post method
-SIMCOM_Error SIMCom_Get(const char* id_machine, uint32_t timeOut); //get method
+void change_uart_port(UART_HandleTypeDef *uart_port);
+SIMCOM_Error SIMCom_Post(const char* data, const char* url, uint32_t timeOut); //post method
+SIMCOM_Error SIMCom_Get(const char *id_machine, const char* url, uint32_t timeOut); //get method
 
 SIMCOM_Error SIM_Sleep(uint32_t timeOut);
 SIMCOM_Error SIM_Wakeup(uint32_t timeOut);

@@ -1,6 +1,11 @@
 ///Include
 #include "SIMCOM.h"
 
+#define GET 0
+#define POST 1
+#define PWD 2
+#define WUP 3
+
 typedef enum {
 	AT,
     CSSLCFG,
@@ -20,8 +25,26 @@ typedef enum {
     AWAIT
 } SIMCOM_State;
 
-extern UART_HandleTypeDef huart1;
+typedef enum {
+    CMD_AT_idx,
+    CMD_HTTP_TERM_idx,
+    CMD_enableSNI_idx,
+    CMD_HTTP_INIT_idx,
+    CMD_PARA_CONTENT_idx,
+    CMD_HTTP_POST_idx,
+    CMD_HTTP_GET_idx,
+    CMD_HTTP_READ_idx,
+    CMD_SLEEP_idx,
+    CMD_WAKE_idx
+} SIMCOM_Cmd;
+
 extern UART_HandleTypeDef huart2;
+UART_HandleTypeDef *p_sim_uart = &huart2;
+
+void change_uart_port(UART_HandleTypeDef *uart_port){
+    p_sim_uart = uart_port;
+}
+
 //SIMCom Flag
 volatile bool SIM_DataValid = false;
 /* SIMCom UART buffer and data container */
@@ -43,20 +66,16 @@ const char *messeage[] = {
 	"AT+HTTPTERM\r",
 	"AT+CSSLCFG=\"enableSNI\",0,1\r",
 	"AT+HTTPINIT\r",
-	"AT+HTTPPARA=\"URL\",\"https://api.admin.bi-oil.app/postcontainer/\"\r",
 	"AT+HTTPPARA=\"CONTENT\",\"application/json\"\r",
 	"AT+HTTPACTION=1\r",
+    "AT+HTTPACTION=0\r",
 	"AT+HTTPREAD=0,300\r",
-	"AT+HTTPTERM\r",
-	//Get
-	"AT+HTTPPARA=\"URL\",\"https://api.admin.bi-oil.app/vinschool-machine/get-auth\"\r",
-	"AT+HTTPACTION=0\r",
 	//Sleep mode
 	"AT+CSCLK=2\r",
 	"WAKEUP\r"
 };
 
-
+static SIMCOM_Cmd   CMD = CMD_AT_idx;
 static SIMCOM_State STATE = HTTPTERM_1;
 static SIMCOM_State PRE_STATE = HTTPTERM_1;
 static SIMCOM_Error Result = DONE;
@@ -93,7 +112,7 @@ void Transmit(const char *cmd){
         PRE_STATE = STATE;
         retrials = 0;
     }
- 	HAL_UART_Transmit(&huart2, (uint8_t*)cmd, strlen(cmd), 500);// Send data UART
+ 	HAL_UART_Transmit(p_sim_uart, (uint8_t*)cmd, strlen(cmd), 500);// Send data UART
 // 	memset(SIM_buffer,'\0',UART_RX_BUFFER_SIZE);		//reset receive buffer
 // 	LOG("[SIM_CMD]",cmd);
     STATE = AWAIT;
@@ -256,20 +275,20 @@ SIMCOM_Error SIMCom_Post(const char* data, const char* url, uint32_t timeOut){
         delay_ms(50);
         switch (STATE) {
             case AT:
-                Transmit(messeage[0]); //AT
+                Transmit(messeage[CMD = CMD_AT_idx]); //AT
                 break;
             case CSSLCFG:
-                Transmit(messeage[2]); //AT+CSSLCFG
+                Transmit(messeage[CMD = CMD_enableSNI_idx]); //AT+CSSLCFG
                 break;
             case HTTPINIT:
-                Transmit(messeage[3]); //AT+INIT
+                Transmit(messeage[CMD = CMD_HTTP_INIT_idx]); //AT+INIT
                 break;
             case HTTPPARA_URL:
                 snprintf(char_url, sizeof(char_url), "AT+HTTPPARA=\"URL\",\"%s\"\r", url);
                 Transmit(char_url); //AT+HTTPPARA URL
                 break;
             case HTTPPARA_CONTENT:
-                Transmit(messeage[5]); //AT+HTTPPARA CONTENT
+                Transmit(messeage[CMD = CMD_PARA_CONTENT_idx]); //AT+HTTPPARA CONTENT
                 break;
             case HTTPPARA_AUTH:
                 break;
@@ -281,19 +300,19 @@ SIMCOM_Error SIMCom_Post(const char* data, const char* url, uint32_t timeOut){
                 Transmit(data);         //Transmit DATA
                 break;
             case HTTPACTION:
-                Transmit(messeage[6]);   //AT+HTTPACTION - POST
+                Transmit(messeage[CMD = CMD_HTTP_POST_idx]);   //AT+HTTPACTION - POST
                 break;
             case HTTPREAD:
-                Transmit(messeage[7]);   //AT+HTTPREAD
+                Transmit(messeage[CMD = CMD_HTTP_READ_idx]);   //AT+HTTPREAD
                 break;
             case HTTPTERM_1:
-                Transmit(messeage[8]);   //AT+HTTPTERM
+                Transmit(messeage[CMD = CMD_HTTP_TERM_idx]);   //AT+HTTPTERM
                 break;
             case HTTPTERM_2:
-                Transmit(messeage[8]);   //AT+HTTPTERM
+                Transmit(messeage[CMD = CMD_HTTP_TERM_idx]);   //AT+HTTPTERM
                 break;
             case AWAIT:
-                SIM_CheckResponse(1);
+                SIM_CheckResponse(POST);
                 break;
             default:
                 break;
@@ -304,8 +323,8 @@ SIMCOM_Error SIMCom_Post(const char* data, const char* url, uint32_t timeOut){
     return Result;
 }
 
-SIMCOM_Error SIMCom_Get(const char *id_machine, uint32_t timeOut){
-    while (Result == EMPTY ) {
+SIMCOM_Error SIMCom_Get(const char *id_machine, const char* url, uint32_t timeOut){
+    while (Result == EMPTY) {
         /* Timeout handle */
         if(timeOutHandle(timeOut)){
             Result = ERR_UART;
@@ -315,35 +334,36 @@ SIMCOM_Error SIMCom_Get(const char *id_machine, uint32_t timeOut){
         delay_ms(50);
         switch (STATE) {
             case AT:
-                Transmit(messeage[0]); //AT
+                Transmit(messeage[CMD = CMD_AT_idx]); //AT
                 break;
             case CSSLCFG:
-                Transmit(messeage[2]); //AT+CSSLCFG
+                Transmit(messeage[CMD = CMD_enableSNI_idx]); //AT+CSSLCFG
                 break;
             case HTTPINIT:
-                Transmit(messeage[3]); //AT+INIT
+                Transmit(messeage[CMD = CMD_HTTP_INIT_idx]); //AT+INIT
                 break;
             case HTTPPARA_URL:
-                Transmit(messeage[9]); //AT+HTTPPARA URL
+                snprintf(char_url, sizeof(char_url), "AT+HTTPPARA=\"URL\",\"%s\"\r", url);
+                Transmit(char_url); //AT+HTTPPARA URL
                 break;
             case HTTPPARA_AUTH:
                 snprintf(author, sizeof(author), "AT+HTTPPARA=\"USERDATA\",\"Authorization: Basic %s\"\r", id_machine);
                 Transmit(author);       //AT+HTTPPARA AUTH
                 break;
             case HTTPACTION:
-                Transmit(messeage[10]);   //AT+HTTPACTION - GET
+                Transmit(messeage[CMD = CMD_HTTP_GET_idx]);   //AT+HTTPACTION - GET
                 break;
             case HTTPREAD:
-                Transmit(messeage[7]);   //AT+HTTPREAD
+                Transmit(messeage[CMD = CMD_HTTP_READ_idx]);   //AT+HTTPREAD
                 break;
             case HTTPTERM_1:
-                Transmit(messeage[1]);   //AT+HTTPTERM
+                Transmit(messeage[CMD = CMD_HTTP_TERM_idx]);   //AT+HTTPTERM
                 break;
             case HTTPTERM_2:
-                Transmit(messeage[1]);   //AT+HTTPTERM
+                Transmit(messeage[CMD = CMD_HTTP_TERM_idx]);   //AT+HTTPTERM
                 break;
             case AWAIT:
-                SIM_CheckResponse(0);
+                SIM_CheckResponse(GET);
                 break;
             default:
                 STATE = HTTPTERM_1;
@@ -363,16 +383,16 @@ SIMCOM_Error SIM_Sleep(uint32_t timeOut){
         delay_ms(50);
         switch (STATE) {
             case AT:
-                Transmit(messeage[0]); //AT
+                Transmit(messeage[CMD = CMD_AT_idx]); //AT
                 break;
             case SLEEP:
-                Transmit(messeage[11]); //AT+CSCLK=2
+                Transmit(messeage[CMD = CMD_SLEEP_idx]); //AT+CSCLK=2
                 break;
             case HTTPTERM_1:
                 STATE = AT;
                 break;
             case AWAIT:
-                SIM_CheckResponse(2);
+                SIM_CheckResponse(PWD);
                 break;
             default:
                 break;
@@ -394,18 +414,18 @@ SIMCOM_Error SIM_Wakeup(uint32_t timeOut){
         switch (STATE) {
             case AT:
                 SIM_DataValid = false;
-                HAL_UART_Transmit(&huart2, (uint8_t*)"AT\r", 3, 50);// Send data UART
+                HAL_UART_Transmit(p_sim_uart, (uint8_t*)"AT\r", 3, 50);// Send data UART
                 // 	LOG("[SIM_CMD]",cmd);
                 STATE = AWAIT;
                 PRE_STATE = AT;
                 break;
             case HTTPTERM_1:
-                HAL_UART_Transmit(&huart2, (uint8_t*) "AT\r", 3, 50);
+                HAL_UART_Transmit(p_sim_uart, (uint8_t*) "AT\r", 3, 50);
                 delay_ms(100);
                 STATE = AT;
                 break;
             case AWAIT:
-                SIM_CheckResponse(3);
+                SIM_CheckResponse(WUP);
                 break;
             default:
                 break;
@@ -415,7 +435,6 @@ SIMCOM_Error SIM_Wakeup(uint32_t timeOut){
     delay_ms(1000);
     return Result;
 }
-
 
 //uint8_t SIM_Sleep(uint32_t timeOut){
 //    if(initTime == 0){
